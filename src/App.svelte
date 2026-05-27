@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import { listen } from '@tauri-apps/api/event'
+  import { invoke } from '@tauri-apps/api/core'
   import { initialState, transition, type TimerState } from './lib/timer-machine.js'
   import { createTicker } from './lib/ticker.js'
   import { formatTime } from './lib/format.js'
+  import { handleTrayCommand } from './lib/tray-handler.js'
 
   let state: TimerState = $state(initialState)
 
@@ -31,6 +35,33 @@
     if (state.session === 'shortBreak') return 'Short Break'
     return 'Long Break'
   }
+
+  onMount(() => {
+    const un1 = listen('tray:pause_resume', () => handleClick())
+    const un2 = listen('tray:skip', () => {
+      state = handleTrayCommand(state, 'skip').state
+      ticker.start()
+    })
+    const un3 = listen('tray:stop', () => {
+      state = handleTrayCommand(state, 'stop').state
+      ticker.stop()
+    })
+    const un4 = listen('tray:quit', () => {
+      ticker.stop()
+      window.close()
+    })
+
+    return () => {
+      un1.then(f => f())
+      un2.then(f => f())
+      un3.then(f => f())
+      un4.then(f => f())
+    }
+  })
+
+  $effect(() => {
+    invoke('set_tray_phase', { phase: state.phase })
+  })
 
   $effect(() => {
     return () => ticker.stop()
