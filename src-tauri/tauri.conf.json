@@ -1,7 +1,7 @@
 {
   "productName": "Pomodoro",
   "version": "0.1.0",
-  "identifier": "com.pomodoro.app",
+  "identifier": "com.pomodoro.timer",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all"
+    "targets": "all",
+    "icon": ["icons/icon.png"]
   }
 }
