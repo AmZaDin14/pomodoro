@@ -1,3 +1,5 @@
+mod position;
+
 use tauri::{
     menu::{MenuBuilder, MenuItem, MenuItemBuilder, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -66,6 +68,29 @@ pub fn run() {
                 .build(app)?;
 
             app.manage(PauseResumeItem(pause_resume));
+
+            let pos_dir = app.path().app_local_data_dir()?;
+            std::fs::create_dir_all(&pos_dir).ok();
+            let pos_path = pos_dir.join("window_position.json");
+
+            if let Some(window) = app.get_webview_window("main") {
+                if let Some(pos) = position::load(&pos_path) {
+                    let _ = window.set_position(tauri::Position::Physical(
+                        tauri::PhysicalPosition { x: pos.x, y: pos.y },
+                    ));
+                }
+
+                let save_path = pos_path.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Moved(position) = event {
+                        let pos = position::WindowPosition {
+                            x: position.x,
+                            y: position.y,
+                        };
+                        let _ = position::save(&save_path, &pos);
+                    }
+                });
+            }
 
             Ok(())
         })
