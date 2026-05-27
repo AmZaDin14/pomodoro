@@ -6,13 +6,20 @@
   import { createTicker } from './lib/ticker.js'
   import { formatTime } from './lib/format.js'
   import { handleTrayCommand } from './lib/tray-handler.js'
+  import { playChime } from './lib/sound-player.js'
+  import { notifySessionEnd } from './lib/notifier.js'
 
   let state: TimerState = $state(initialState)
+  let flash = $state(false)
 
   const ticker = createTicker(() => {
+    const prevSession = state.session
     const result = transition(state, 'tick')
     state = result.state
     if (result.events.includes('sessionEnded')) {
+      playChime()
+      notifySessionEnd(prevSession)
+      flash = true
       state = transition(state, 'start').state
     }
   }, 1000)
@@ -64,11 +71,26 @@
   })
 
   $effect(() => {
+    if (flash) {
+      const timer = setTimeout(() => flash = false, 1500)
+      return () => clearTimeout(timer)
+    }
+  })
+
+  $effect(() => {
     return () => ticker.stop()
   })
 </script>
 
-<div class="container" data-tauri-drag-region onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
+<div
+  class="container"
+  class:flash
+  data-tauri-drag-region
+  onclick={handleClick}
+  onkeydown={(e) => e.key === 'Enter' && handleClick()}
+  role="button"
+  tabindex="0"
+>
   <div class="time">{formatTime(state.remaining)}</div>
   <div class="label">{getLabel()}</div>
 </div>
@@ -84,6 +106,11 @@
     background: #1a1a1a;
     color: #ffffff;
     user-select: none;
+    transition: background 0.3s;
+  }
+
+  .container.flash {
+    background: #3a3a3a;
   }
 
   .time {

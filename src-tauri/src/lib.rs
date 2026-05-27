@@ -17,6 +17,7 @@ fn set_tray_phase(state: tauri::State<PauseResumeItem>, phase: String) {
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![set_tray_phase])
         .setup(|app| {
             let pause_resume =
